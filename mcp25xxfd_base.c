@@ -67,6 +67,13 @@ static const struct of_device_id mcp25xxfd_of_match[] = {
 };
 MODULE_DEVICE_TABLE(of, mcp25xxfd_of_match);
 
+static const struct acpi_device_id mcp251xfd_acpi_match[] = {
+        { "CAN0", (void *)CAN_MCP2518FD },
+        { "CAN1", (void *)CAN_MCP2518FD },
+        { }
+};
+MODULE_DEVICE_TABLE(acpi, mcp251xfd_acpi_match);
+
 static int mcp25xxfd_base_probe(struct spi_device *spi)
 {
 	const struct of_device_id *of_id =
@@ -74,6 +81,7 @@ static int mcp25xxfd_base_probe(struct spi_device *spi)
 	struct mcp25xxfd_priv *priv;
 	int ret;
 
+    dev_info(&spi->dev,"spi->irq = %d \r\n", spi->irq);
 	/* as irq_create_fwspec_mapping() can return 0, check for it */
 	if (spi->irq <= 0) {
 		dev_err(&spi->dev, "no valid irq line defined: irq = %i\n",
@@ -273,6 +281,7 @@ static struct spi_driver mcp25xxfd_can_driver = {
 	.driver = {
 		.name = DEVICE_NAME,
 		.of_match_table = mcp25xxfd_of_match,
+        .acpi_match_table = mcp251xfd_acpi_match,
 		.pm = &mcp25xxfd_base_pm_ops,
 	},
 	.id_table = mcp25xxfd_id_table,
