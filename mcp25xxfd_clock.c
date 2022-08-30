@@ -411,16 +411,51 @@ static int mcp25xxfd_clock_of_parse(struct mcp25xxfd_priv *priv)
 int mcp25xxfd_clock_init(struct mcp25xxfd_priv *priv)
 {
 	struct spi_device *spi = priv->spi;
-	struct clk *clk;
-	int ret, freq;
+	//struct clk *clk;
+	//int ret, freq;
+    int freq;
 
 	mutex_init(&priv->clk_user_lock);
     /*
-    * Currently, we just only support clock is from
+    * Currently, we just only support system clock is from
     * OSC.
     */
     priv->clk = NULL;
 	priv->config.clock_pll = 0;
+    freq = MCP251XFD_SYSCLOCK_HZ_MAX;
+    priv->clock_freq = freq;
+    /* Errata Reference:
+	 * mcp2517fd: DS80000792C 5., mcp2518fd: DS80000789C 4.
+	 *
+	 * The SPI can write corrupted data to the RAM at fast SPI
+	 * speeds:
+	 *
+	 * Simultaneous activity on the CAN bus while writing data to
+	 * RAM via the SPI interface, with high SCK frequency, can
+	 * lead to corrupted data being written to RAM.
+	 *
+	 * Fix/Work Around:
+	 * Ensure that FSCK is less than or equal to 0.85 *
+	 * (FSYSCLK/2).
+     */
+	priv->spi_setup_speed_hz = freq / 2 / 1000 * 850;
+
+	/* normal operation clock speeds */
+	priv->spi_normal_speed_hz = freq / 2 / 1000 * 850;
+	/* set limit on speed */
+	if (spi->max_speed_hz) {
+		priv->spi_setup_speed_hz = min_t(int,
+						 priv->spi_setup_speed_hz,
+						 spi->max_speed_hz);
+		priv->spi_normal_speed_hz = min_t(int,
+						  priv->spi_normal_speed_hz,
+						  spi->max_speed_hz);
+	}
+
+	/* use setup speed by default
+	 * - this is switched when clock is enabled/disabled
+	 */
+	priv->spi_use_speed_hz = priv->spi_normal_speed_hz;
 #if 0
 	priv->config.clock_div2 = false;
 	priv->config.clock_odiv = 10;
