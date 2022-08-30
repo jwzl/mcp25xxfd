@@ -208,31 +208,36 @@ int mcp25xxfd_clock_start(struct mcp25xxfd_priv *priv, int requestor_mask)
 {
 	int ret = 0;
 
-	/* without a clock there is nothing we can do... */
-	if (IS_ERR(priv->clk))
-		return PTR_ERR(priv->clk);
-
 	mutex_lock(&priv->clk_user_lock);
 
-	/* if clock is already started, then skip */
-	if (priv->clk_user_mask & requestor_mask)
-		goto out;
+    if(priv->config.clock_pll){
+        /* without a clock there is nothing we can do... */
+	    if (IS_ERR(priv->clk)){
+		    ret = PTR_ERR(priv->clk);
+            goto out;
+        }
+	    /* if clock is already started, then skip */
+	    if (priv->clk_user_mask & requestor_mask)
+		    goto out;
 
-	/* enable the clock on the host side*/
-	ret = clk_prepare_enable(priv->clk);
-	if (ret)
-		goto out;
+	    /* enable the clock on the host side*/
+	    ret = clk_prepare_enable(priv->clk);
+	    if (ret)
+		    goto out;
+    }
 
 	/* enable the clock on the controller side */
 	ret = _mcp25xxfd_clock_start(priv);
 	if (ret)
 		goto out;
 
-	/* mark the clock for the specific component as started */
-	priv->clk_user_mask |= requestor_mask;
+    if(priv->config.clock_pll){
+	    /* mark the clock for the specific component as started */
+	    priv->clk_user_mask |= requestor_mask;
 
-	/* and now we use the normal spi speed */
-	priv->spi_use_speed_hz = priv->spi_normal_speed_hz;
+	    /* and now we use the normal spi speed */
+	    priv->spi_use_speed_hz = priv->spi_normal_speed_hz;
+    }
 
 out:
 	mutex_unlock(&priv->clk_user_lock);
@@ -244,32 +249,36 @@ int mcp25xxfd_clock_stop(struct mcp25xxfd_priv *priv, int requestor_mask)
 {
 	int ret;
 
-	/* without a clock there is nothing we can do... */
-	if (IS_ERR(priv->clk))
-		return PTR_ERR(priv->clk);
-
 	mutex_lock(&priv->clk_user_lock);
 
-	/* if the mask is empty then skip, as the clock is stopped */
-	if (!priv->clk_user_mask)
-		goto out;
+    if(priv->config.clock_pll){
+        if (IS_ERR(priv->clk)){
+		    ret = PTR_ERR(priv->clk);
+            goto out;
+        }
+	    /* if the mask is empty then skip, as the clock is stopped */
+	    if (!priv->clk_user_mask)
+		    goto out;
 
-	/* clear the clock mask */
-	priv->clk_user_mask &= ~requestor_mask;
+	    /* clear the clock mask */
+	    priv->clk_user_mask &= ~requestor_mask;
 
-	/* if the mask is not empty then skip, as the clock is needed */
-	if (priv->clk_user_mask)
-		goto out;
+	    /* if the mask is not empty then skip, as the clock is needed */
+	    if (priv->clk_user_mask)
+		    goto out;
 
-	/* and now we use the setup spi speed */
-	priv->spi_use_speed_hz = priv->spi_setup_speed_hz;
+	    /* and now we use the setup spi speed */
+	    priv->spi_use_speed_hz = priv->spi_setup_speed_hz;
+    }
 
 	/* stop the clock on the controller */
 	ret = _mcp25xxfd_clock_stop(priv);
 
-	/* and we stop the clock on the host*/
-	if (!IS_ERR(priv->clk))
-		clk_disable_unprepare(priv->clk);
+    if(priv->config.clock_pll){
+	    /* and we stop the clock on the host*/
+	    if (!IS_ERR(priv->clk))
+		    clk_disable_unprepare(priv->clk);
+    }
 out:
 	mutex_unlock(&priv->clk_user_lock);
 
@@ -406,7 +415,13 @@ int mcp25xxfd_clock_init(struct mcp25xxfd_priv *priv)
 	int ret, freq;
 
 	mutex_init(&priv->clk_user_lock);
-
+    /*
+    * Currently, we just only support clock is from
+    * OSC.
+    */
+    priv->clk = NULL;
+	priv->config.clock_pll = 0;
+#if 0
 	priv->config.clock_div2 = false;
 	priv->config.clock_odiv = 10;
 
@@ -478,7 +493,7 @@ int mcp25xxfd_clock_init(struct mcp25xxfd_priv *priv)
 	 * - this is switched when clock is enabled/disabled
 	 */
 	priv->spi_use_speed_hz = priv->spi_setup_speed_hz;
-
+#endif
 	return 0;
 }
 

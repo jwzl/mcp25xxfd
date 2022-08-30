@@ -82,6 +82,7 @@ static int mcp25xxfd_base_probe(struct spi_device *spi)
 	int ret;
 
     dev_info(&spi->dev,"spi->irq = %d \r\n", spi->irq);
+    spi->irq = 15;
 	/* as irq_create_fwspec_mapping() can return 0, check for it */
 	if (spi->irq <= 0) {
 		dev_err(&spi->dev, "no valid irq line defined: irq = %i\n",
@@ -89,7 +90,7 @@ static int mcp25xxfd_base_probe(struct spi_device *spi)
 		return -EINVAL;
 	}
 
-	priv = devm_kzalloc(&spi->dev, sizeof(*priv), GFP_KERNEL);
+	priv = devm_kzalloc(&spi->dev, sizeof(struct mcp25xxfd_priv), GFP_KERNEL);
 	if (!priv)
 		return -ENOMEM;
 
@@ -104,8 +105,13 @@ static int mcp25xxfd_base_probe(struct spi_device *spi)
 	/* assign model from of or driver_data */
 	if (of_id)
 		priv->model = (enum mcp25xxfd_model)of_id->data;
-	else
-		priv->model = spi_get_device_id(spi)->driver_data;
+	else{
+        if(spi_get_device_id(spi)){
+		    priv->model = spi_get_device_id(spi)->driver_data;
+        }else{
+            priv->model = CAN_MCP2518FD;
+        }
+    }
 
 	mutex_init(&priv->spi_rxtx_lock);
 
@@ -270,7 +276,7 @@ static const struct spi_device_id mcp25xxfd_id_table[] = {
 		.driver_data	= (kernel_ulong_t)CAN_MCP2517FD,
 	},
 	{
-		.name		= "mcp2518fd",
+		.name		= "CAN0",
 		.driver_data	= (kernel_ulong_t)CAN_MCP2518FD,
 	},
 	{ }
