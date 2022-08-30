@@ -9,10 +9,6 @@
 
 #include <linux/regulator/consumer.h>
 
-#define MCP251XFD_SYSCLOCK_HZ_MAX 40000000
-#define MCP251XFD_SYSCLOCK_HZ_MIN 1000000
-#define MCP251XFD_SPICLOCK_HZ_MAX 20000000
-
 int mcp25xxfd_base_power_enable(struct regulator *reg, int enable);
 
 #endif /* __MCP25XXFD_BASE_H */

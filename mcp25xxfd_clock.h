@@ -15,6 +15,10 @@
 #define MCP25XXFD_CLK_USER_GPIO1 BIT(2)
 #define MCP25XXFD_CLK_USER_CLKOUT BIT(3)
 
+#define MCP251XFD_SYSCLOCK_HZ_MAX 40000000
+#define MCP251XFD_SYSCLOCK_HZ_MIN 1000000
+#define MCP251XFD_SPICLOCK_HZ_MAX 20000000
+
 /* shared (internal) clock control */
 int mcp25xxfd_clock_init(struct mcp25xxfd_priv *priv);
 int mcp25xxfd_clock_probe(struct mcp25xxfd_priv *priv);
